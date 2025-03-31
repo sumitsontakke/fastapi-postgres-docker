@@ -20,7 +20,7 @@ from fastapi import status
 from sqlalchemy.orm import Session
 
 from business.txnmsg_main import txnmsg_main
-from business.txnmsgs_refresh import txnmsgs_refresh_getapi
+from business.txnmsgs_refresh import txnmsgs_refresh_getapi, feed_all_msg_into_regMsgs
 from core.config import log
 from db.repository.ipmessage import create_new_ipmessage
 from db.session import get_db
@@ -28,6 +28,47 @@ from schemas.ipmessage import createIPMessage
 
 # Initialize the API router for transaction message-related endpoints
 router = APIRouter()
+
+#  API Endpoint to call feed_all_msg_into_regMsgs from business.txnmsgs_refresh
+@router.get("/feed_all_msg_into_regMsgs", status_code=status.HTTP_200_OK)
+def feed_regMsgs(db: Session = Depends(get_db)):
+    """
+    Endpoint: POST /feed_all_msg_into_regMsgs
+    Purpose:
+        - Feeds all messages into the regMsgs table.
+        - Calls the `feed_all_msg_into_regMsgs` function to process and store messages.
+    Data Interaction:
+        - Uses the database session to insert messages into the regMsgs table.
+    Returns:
+        - A status message indicating the operation was successful.
+    """
+    # Call the business logic function to feed messages into regMsgs
+    feed_all_msg_into_regMsgs(db=db)
+    return {"status": "Ok"}
+
+# @router.get("/test_new_msgs/", status_code=status.HTTP_200_OK)
+# async def get_txnmsgs(db: Session = Depends(get_db)):
+#     """
+#     Endpoint: GET /test_new_msgs/
+#     Purpose:
+#         - Fetches the latest transaction messages from the database.
+#         - Calls the `txnmsgs_refresh_getapi` function to retrieve and process transaction messages.
+#     Data Interaction:
+#         - Interacts with the database session to fetch transaction messages.
+#     Returns:
+#         - A dictionary containing the list of transaction messages under the key "m_transactions".
+#     """
+#     # Log the request for debugging purposes
+#     log.info("Fetching transaction messages from the database.")
+
+#     # Call the business logic function to fetch transaction messages
+#     data = txnmsgs_refresh_getapi(db)
+
+#     # Log the result of the fetch operation
+#     log.info("Fetched transaction messages: %s", data)
+
+#     # Return the fetched transaction messages
+#     return {"m_transactions": data}
 
 @router.get("/test_new_msgs/")
 def get_txnmsgs(db: Session = Depends(get_db)):
