@@ -13,8 +13,13 @@ from sqlalchemy.orm import relationship
 
 from db.base_class import Base
 
-
+# Stores raw messages from the iMessages database
 class regMsgs(Base):
     id = Column(Integer, primary_key=True)
-    created_at = Column(DateTime, default=datetime.now)
-    ipmessage = Column(String)
+    sender = Column(String, index=True)
+    text = Column(String, index=True)
+    timestamp = Column(DateTime, index=True)
+    type = Column(String, index=True)
+    receiver = Column(String, index=True)
+    _number_ = Column(String, index=True)
+    is_txn_message = Column(Boolean, default=False)

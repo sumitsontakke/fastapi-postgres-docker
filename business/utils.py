@@ -44,3 +44,24 @@ def get_next_month_terminal_dates(today):
     last_date = datetime(year, next_month, last_day)
 
     return first_date, last_date
+
+def parse_transaction_message(msg):
+    """
+    Parses a transaction message and returns a dictionary with relevant fields.
+    1. Maps predefined keys to message fields.
+    2. Generates a unique ID for the message.
+    3. Extracts entities from the message.
+    """
+    # Map predefined keys to message fields
+    msg_keys = ["sender", "text", "timestamp", "type", "receiver", "_number_"]
+    data = dict(zip(msg_keys, msg))
+
+    # Generate a unique ID for the message
+    data["id"] = str(uuid.uuid4())
+
+    # Extract entities from the message
+    data["amount"] = extract_amount(data.get("text", ""))
+    data["to_id"] = extract_upi_id(data.get("text", ""))
+    data["accounts_info"] = extract_account_info(data.get("text", ""))
+
+    return data

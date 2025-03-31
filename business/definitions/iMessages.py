@@ -37,6 +37,7 @@ class iMessages:
 
         # Define patterns to identify transaction-related messages
         txn_patterns = get_all_patterns(db)
+        log.info(f"Transaction patterns loaded: #{len(txn_patterns)}")
         if not txn_patterns:
             txn_patterns = [
                 r"Sent Rs\.\d+\.\d+ from Kotak Bank AC X\d+",
@@ -54,6 +55,16 @@ class iMessages:
 
         # Store the filtered messages for further processing
         self.msgs = filtered_messages
+        self.all_messages_raw = all_messages
+
+    def get_all_raw_messages(self):
+        """
+        Returns all raw iMessages without filtering.
+        - Useful for debugging or when no filtering is needed.
+        """
+        # Return all messages without filtering
+        log.info(f"Total messages count: {len(self.msgs)}")
+        return self.all_messages_raw
 
     def get_messages(self):
         """
