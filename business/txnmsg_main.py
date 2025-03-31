@@ -85,7 +85,7 @@ def sync_imessages_db(db: Session, imsg: dict):
 def txnmsg_main(db):
     """Process imessages into application database"""
     # Get all imessages from iMessages database (file)
-    txn_messages = iMessages.get_messages(iMessages())
+    txn_messages = iMessages.get_messages(iMessages(db=db))
     log.info(f"txn_messages: {txn_messages}")
     # check if txn_msg already in db and add if not available
     log.info(f"Passing messages to sync with \n{len(txn_messages)}")

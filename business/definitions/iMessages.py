@@ -4,10 +4,11 @@ import uuid
 import os
 from core.config import log
 from imessage_reader import fetch_data
-
+from db.repository.txn_patterns import get_all_patterns
+from db.session import get_db
 
 class iMessages:
-    def __init__(self) -> None:
+    def __init__(self, db) -> None:
         """
         Initialize the iMessages class.
         - Sets up the database path from the environment variable or default path.
@@ -35,12 +36,14 @@ class iMessages:
         all_messages = fd.get_messages()
 
         # Define patterns to identify transaction-related messages
-        txn_patterns = [
-            r"Sent Rs\.\d+\.\d+ from Kotak Bank AC X\d+",
-            r"Sent Rs\.\d+\.\d+ from Kotak Bank AC X\d+ to \S+ on \d{2}-\d{2}-\d{2}",
-            r"Thank you for using \S+ Credit Card No XX\d+ on \d{2}-\d{2}-\d{2} for INR \d+",
-            r"Amt Sent Rs.\d+\nFrom HDFC Bank A/C *\d+\nTo \S+\nOn \d{2}-\d{2}\nRef \d+",
-        ]
+        txn_patterns = get_all_patterns(db)
+        if not txn_patterns:
+            txn_patterns = [
+                r"Sent Rs\.\d+\.\d+ from Kotak Bank AC X\d+",
+                r"Sent Rs\.\d+\.\d+ from Kotak Bank AC X\d+ to \S+ on \d{2}-\d{2}-\d{2}",
+                r"Thank you for using \S+ Credit Card No XX\d+ on \d{2}-\d{2}-\d{2} for INR \d+",
+                r"Amt Sent Rs.\d+\nFrom HDFC Bank A/C *\d+\nTo \S+\nOn \d{2}-\d{2}\nRef \d+",
+            ]
 
         # Filter messages that match any of the transaction patterns
         filtered_messages = [
