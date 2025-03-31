@@ -6,11 +6,67 @@ from sqlalchemy.orm import Session
 
 from core.config import log
 from db.models.ipmessage import iPMessage
-from db.models.ipmessage import txnMessage
+from db.models.txn_patterns import txnPatterns
 from schemas.ipmessage import createIPMessage
 from schemas.txn_msg_schema import txnMsgNewCreate
+from db.repository.txn_patterns import get_all_patterns
 
+class TxnPatternLoader:
+    """
+    Singleton class to load and cache transaction patterns from the database.
+    """
+    _patterns = None
 
+    @classmethod
+    def load_patterns(cls, db: Session):
+        """
+        Load patterns from the database and cache them.
+
+        Args:
+            db (Session): The database session.
+
+        Returns:
+            list: A list of regex patterns.
+        """
+        if cls._patterns is None:
+            log.info("Loading transaction patterns from the database...")
+            cls._patterns = get_all_patterns(db)
+        return cls._patterns
+
+    @classmethod
+    def refresh_patterns(cls, db: Session):
+        """
+        Refresh the cached patterns by reloading them from the database.
+
+        Args:
+            db (Session): The database session.
+
+        Returns:
+            list: A list of regex patterns.
+        """
+        log.info("Refreshing transaction patterns from the database...")
+        cls._patterns = get_all_patterns(db)
+        return cls._patterns
+
+def initialize_patterns(db: Session):
+    """
+    Initialize transaction patterns at program startup.
+
+    Args:
+        db (Session): The database session.
+    """
+    patterns = TxnPatternLoader.load_patterns(db)
+    log.info(f"Loaded {len(patterns)} transaction patterns.")
+
+def refresh_patterns(db: Session):
+    """
+    Refresh transaction patterns dynamically.
+
+    Args:
+        db (Session): The database session.
+    """
+    patterns = TxnPatternLoader.refresh_patterns(db)
+    log.info(f"Refreshed {len(patterns)} transaction patterns.")
 
 def create_new_ipmessage(imessage: createIPMessage, db: Session):
     """

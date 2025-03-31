@@ -6,6 +6,7 @@ from sqlalchemy import Column
 from sqlalchemy import Integer
 from sqlalchemy import String
 from sqlalchemy import TIMESTAMP
+from sqlalchemy import JSON
 from sqlalchemy.orm import relationship
 
 from db.base_class import Base
@@ -15,13 +16,13 @@ class iPMessage(Base):
     id = Column(String, primary_key=True, index=True)
     sender = Column(String, nullable=False, index=True)
     text = Column(String, nullable=False)
-    timestamp = Column(String, default=False)
+    timestamp = Column(TIMESTAMP, nullable=False)
     type = Column(String, default=True)
     receiver = Column(String, nullable=False)
     _number_ = Column(String, nullable=False)
-    amount = Column(Integer)
+    amount = Column(JSON)
     accounts_info = Column(String)
-    to_id = Column(String, nullable=True, default=None)
+    to_id = Column(JSON, nullable=True, default=None)
     usr_acted = Column(Boolean)
 
 

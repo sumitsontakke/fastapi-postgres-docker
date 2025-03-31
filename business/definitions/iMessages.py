@@ -1,106 +1,171 @@
 import re
 import sys
 import uuid
-
+import os
+from core.config import log
 from imessage_reader import fetch_data
 
 
 class iMessages:
     def __init__(self) -> None:
-        DB_PATH = "/tmp/chat.db"
-        # Create a FetchData instance
-        fd = fetch_data.FetchData(DB_PATH)
-        # Store messages in my_data
-        # This is a list of tuples containing user id, message and service (iMessage or SMS).
-        all_txnx = fd.get_messages()
+        """
+        Initialize the iMessages class.
+        - Sets up the database path from the environment variable or default path.
+        - Validates the existence of the database path.
+        - Loads messages from the iMessage database.
+        - Filters messages based on predefined transaction patterns.
+        """
+        # Get the database path from the environment variable or use the default path
+        DB_PATH = os.getenv("DATA_DIRECTORY", "/Users/sumitsontakke/Documents/mbt_data/")
+        log.info(f"DB_PATH: {DB_PATH}")
 
-        txn_stressors = [
+        # Check if the database path exists
+        if not os.path.exists(DB_PATH):
+            log.error(f"Path does not exist: {DB_PATH}")
+            sys.exit(1)
+
+        # List all files in the directory for debugging purposes
+        files = os.listdir(DB_PATH)
+        log.info(f"Files in directory: {files}")
+
+        # Initialize FetchData with the iMessage database file
+        fd = fetch_data.FetchData(DB_PATH + "chat.db")
+
+        # Fetch all messages from the database
+        all_messages = fd.get_messages()
+
+        # Define patterns to identify transaction-related messages
+        txn_patterns = [
             r"Sent Rs\.\d+\.\d+ from Kotak Bank AC X\d+",
             r"Sent Rs\.\d+\.\d+ from Kotak Bank AC X\d+ to \S+ on \d{2}-\d{2}-\d{2}",
             r"Thank you for using \S+ Credit Card No XX\d+ on \d{2}-\d{2}-\d{2} for INR \d+",
             r"Amt Sent Rs.\d+\nFrom HDFC Bank A/C *\d+\nTo \S+\nOn \d{2}-\d{2}\nRef \d+",
         ]
 
-        parsed_msgs = list()
-        for msg in all_txnx:
-            parsed_msgs.append(msg) if [
-                phrase
-                for phrase in list(msg)
-                if re.search(pattern=txn_stressors[0], string=str(phrase))
-            ] else False
+        # Filter messages that match any of the transaction patterns
+        filtered_messages = [
+            msg
+            for msg in all_messages
+            if any(re.search(pattern, str(msg)) for pattern in txn_patterns)
+        ]
 
-        self.msgs = parsed_msgs
+        # Store the filtered messages for further processing
+        self.msgs = filtered_messages
 
     def get_messages(self):
         """
-        Returns filtered imessages list with extracted fields like account_info, amount, to_id
+        Returns a list of filtered iMessages with extracted fields.
+        - Extracts key information such as sender, text, timestamp, type, receiver, and more.
         """
-        filtered_msgs = self.msgs
-        msgs = [self.extract_keys(msg) for msg in filtered_msgs]
-        return msgs
+        # Extract key information from each filtered message
+        processed_msgs = [self.process_message(msg) for msg in self.msgs]
+        log.info(f"Processed messages count: {len(processed_msgs)}")
+        return processed_msgs
 
-    def extract_keys(
-        self,
-        msg,
-        msg_keys=["sender", "text", "timestamp", "type", "receiver", "_number_"],
-    ):
-        # map keys and values to form data dictionary as per
+    def process_message(self, msg):
+        """
+        Processes a single message by extracting key entities.
+        - Combines all entity extraction functions to process the message.
+
+        Args:
+            msg (tuple): The message tuple containing raw data.
+
+        Returns:
+            dict: A dictionary containing the extracted message data.
+        """
+        # Map predefined keys to message fields
+        msg_keys = ["sender", "text", "timestamp", "type", "receiver", "_number_"]
         data = dict(zip(msg_keys, msg))
 
-        data["id"] = str(uuid.uuid1())
+        # Generate a unique ID for the message
+        data["id"] = str(uuid.uuid4())
 
-        # extract amount and add to data dictionary
-        amt_search = re.search(pattern=r"\d+", string=data.get("text", ""))
-        currency_amt = (
-            re.findall(
-                pattern=r"Rs.\d+|INR\s*\d+|INR.\s*\d+", string=data.get("text", "")
-            )
-            if amt_search
-            else False
-        )
-        amount_num = (
-            [re.findall(pattern="\d+", string=cnum) for cnum in currency_amt]
-            if currency_amt
-            else False
-        )
-        if len(amount_num) >= 1:
-            amt = (
-                amount_num[-1]
-                if amount_num and isinstance(amount_num[-1], list)
-                else False
-            )
-            data["amount"] = amt
-
-        # If txn about sending money using upi address, extract upi id and add to data dictionary
-        to_id = re.findall(pattern=r"\S+@\S+", string=data.get("text", ""))
-        if to_id:
-            data["to_id"] = to_id
-
-        # find account related information
-        data["accounts_info"] = []
-        acc_id = re.findall(pattern=r"\bX\d{2,6}\b", string=data.get("text", ""))
-        if (
-            acc_id
-            and "bank ac"
-            in data.get("text", "")[: data.get("text", "").index(acc_id[-1])].lower()
-        ):
-            data["accounts_info"].append(("bank_ac", acc_id))
-            del acc_id
-        acc_id = re.findall(pattern=r"\bXX\d{3,4}\b", string=data.get("text", ""))
-        if (
-            acc_id
-            and "credit"
-            in data.get("text", "")[: data.get("text", "").index(acc_id[-1])].lower()
-            and "card"
-            in data.get("text", "")[: data.get("text", "").index(acc_id[-1])].lower()
-            and "credit card"
-            in data.get("text", "")[: data.get("text", "").index(acc_id[-1])].lower()
-        ):
-            data["accounts_info"].append(("credit_card", acc_id))
-            del acc_id
+        # Extract entities from the message
+        data["amount"] = self.extract_amount(data.get("text", ""))
+        data["to_id"] = self.extract_upi_id(data.get("text", ""))
+        data["accounts_info"] = self.extract_account_info(data.get("text", ""))
 
         return data
 
-    def update_iPMessage(self):
-        msgs = [self.extract_keys(msg) for msg in self.msgs]
-        return msgs
+    def extract_amount(self, text):
+        """
+        Extracts transaction amounts from the message text.
+
+        Args:
+            text (str): The message text.
+
+        Returns:
+            list: A list of extracted amounts.
+        """
+        # Define patterns to identify amounts
+        amount_patterns = [
+            r"Rs\.\d+",
+            r"INR\s*\d+",
+            r"INR.\s*\d+",
+        ]
+
+        # Extract amounts using the patterns
+        currency_amt = [
+            match.group() for pattern in amount_patterns for match in re.finditer(pattern, text)
+        ]
+
+        # Extract numeric values from the matched amounts
+        amount_num = [int(num) for amt in currency_amt for num in re.findall(r"\d+", amt)]
+        return amount_num if amount_num else None
+
+    def extract_upi_id(self, text):
+        """
+        Extracts UPI IDs from the message text.
+
+        Args:
+            text (str): The message text.
+
+        Returns:
+            list: A list of extracted UPI IDs.
+        """
+        # Define pattern to identify UPI IDs
+        upi_pattern = r"\S+@\S+"
+
+        # Extract UPI IDs using the pattern
+        return re.findall(upi_pattern, text)
+
+    def extract_account_info(self, text):
+        """
+        Extracts account-related information from the message text.
+
+        Args:
+            text (str): The message text.
+
+        Returns:
+            list: A list of tuples containing account information.
+        """
+        accounts_info = []
+
+        # Define patterns to identify bank account numbers
+        bank_account_patterns = [
+            r"\bX\d{2,6}\b",  # Bank account numbers (e.g., X1234)
+        ]
+
+        # Extract bank account numbers
+        for pattern in bank_account_patterns:
+            acc_id = re.findall(pattern, text)
+            if acc_id and "bank ac" in text[: text.index(acc_id[-1])].lower():
+                accounts_info.append(("bank_ac", acc_id))
+
+        # Define patterns to identify credit card numbers
+        credit_card_patterns = [
+            r"\bXX\d{3,4}\b",  # Credit card numbers (e.g., XX1234)
+        ]
+
+        # Extract credit card numbers
+        for pattern in credit_card_patterns:
+            acc_id = re.findall(pattern, text)
+            if (
+                acc_id
+                and "credit" in text[: text.index(acc_id[-1])].lower()
+                and "card" in text[: text.index(acc_id[-1])].lower()
+                and "credit card" in text[: text.index(acc_id[-1])].lower()
+            ):
+                accounts_info.append(("credit_card", acc_id))
+
+        return accounts_info

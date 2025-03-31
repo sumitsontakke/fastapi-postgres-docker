@@ -2,10 +2,25 @@
 # Reference: https://www.fastapitutorial.com/blog/fastapi-hello-world/
 import logging
 import os
+import sys
 
 
 class LogConfig:
     logger = logging.getLogger("app_log")
+    logger.setLevel(logging.INFO)  # Set the logging level (DEBUG, INFO, etc.)
+
+    # Create a StreamHandler to log to stdout
+    stream_handler = logging.StreamHandler(sys.stdout)
+    stream_handler.setLevel(logging.DEBUG)  # Set the handler's logging level
+
+    # Define a log format
+    formatter = logging.Formatter(
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    )
+    stream_handler.setFormatter(formatter)
+
+    # Add the handler to the logger
+    logger.addHandler(stream_handler)
 
 
 class Settings:

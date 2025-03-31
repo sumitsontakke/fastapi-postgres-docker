@@ -21,5 +21,15 @@ class viewBill(BaseModel):
     dueDate: date
     paidStatus: bool
 
+class viewBillwithStatus(BaseModel):
+    id: int
+    biller: str
+    type: str
+    billAmount: int
+    paidAmount: int
+    dueDate: date
+    paidStatus: bool
+    status: str
+
 class statusBill(BaseModel):
     status: str

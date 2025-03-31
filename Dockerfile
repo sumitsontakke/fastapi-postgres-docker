@@ -16,6 +16,7 @@ ENV POSTGRES_PASSWORD="supersecretpassword"
 ENV SECRET_KEY="skufhoweiu098ye879yih"
 ENV ALGORITHM="HS256"
 ENV ACCESS_TOKEN_EXPIRE_MINUTES=30
+ENV DATA_DIRECTORY="/app_data/"
 
 # Set the working directory in the container
 WORKDIR /app

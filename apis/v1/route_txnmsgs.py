@@ -1,3 +1,19 @@
+"""
+### **Summary of API Endpoints**
+1. **`GET /test_new_msgs/`**:
+   - Fetches the latest transaction messages from the database.
+   - Calls a business logic function (`txnmsgs_refresh_getapi`) to process and retrieve the messages.
+
+2. **`POST /syncdb`**:
+   - Synchronizes the iMessage database by processing and storing transaction messages.
+   - Calls a business logic function (`txnmsg_main`) to handle the synchronization.
+
+3. **`POST /post_new_msgs`**:
+   - Creates a new transaction message in the database.
+   - Accepts a payload of type `createIPMessage` and inserts it into the database.
+
+"""
+
 from fastapi import APIRouter
 from fastapi import Depends
 from fastapi import status
@@ -10,27 +26,61 @@ from db.repository.ipmessage import create_new_ipmessage
 from db.session import get_db
 from schemas.ipmessage import createIPMessage
 
+# Initialize the API router for transaction message-related endpoints
 router = APIRouter()
-
 
 @router.get("/test_new_msgs/")
 def get_txnmsgs(db: Session = Depends(get_db)):
-    # value = total_assets(db)
-    # if not value:
-    #     value = 0
+    """
+    Endpoint: GET /test_new_msgs/
+    Purpose:
+        - Fetches the latest transaction messages from the database.
+        - Calls the `txnmsgs_refresh_getapi` function to retrieve and process transaction messages.
+    Data Interaction:
+        - Interacts with the database session to fetch transaction messages.
+    Returns:
+        - A dictionary containing the list of transaction messages under the key "m_transactions".
+    """
     data = txnmsgs_refresh_getapi(db)
     return {"m_transactions": data}
 
 
-@router.post("syncdb", status_code=status.HTTP_200_OK)
+@router.post("/syncdb", status_code=status.HTTP_200_OK)
 async def sync_imsgdb(db: Session = Depends(get_db)):
+    """
+    Endpoint: POST /syncdb
+    Purpose:
+        - Synchronizes the iMessage database by processing and storing transaction messages.
+        - Calls the `txnmsg_main` function to handle the synchronization logic.
+    Data Interaction:
+        - Uses the database session to update or insert transaction messages into the database.
+    Returns:
+        - A status message indicating the synchronization was successful.
+    """
     txnmsg_main(db=db)
     return {"status": "Ok"}
 
 
-@router.post("/create", status_code=status.HTTP_201_CREATED)
+@router.post("/post_new_msgs", status_code=status.HTTP_201_CREATED)
 async def post_account(imessage: createIPMessage, db: Session = Depends(get_db)):
-    # log.info("calling to create new imessage", imessage)
+    """
+    Endpoint: POST /post_new_msgs
+    Purpose:
+        - Creates a new transaction message record in the database.
+        - Accepts a payload of type `createIPMessage` to define the new transaction message.
+        - Calls the `create_new_ipmessage` function to insert the new record into the database.
+    Data Interaction:
+        - Inserts a new transaction message into the database using the provided payload.
+    Returns:
+        - A status message indicating the transaction message was successfully created.
+    """
+    # Log the incoming payload for debugging purposes
+    log.info("Creating new iMessage transaction: %s", imessage)
+
+    # Call the repository function to create a new transaction message
     imsg = create_new_ipmessage(imessage, db=db)
-    log.info(imsg)
+
+    # Log the result of the creation process
+    log.info("New iMessage transaction created: %s", imsg)
+
     return {"imsg": "ok"}

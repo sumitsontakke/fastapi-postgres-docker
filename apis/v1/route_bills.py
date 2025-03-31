@@ -15,7 +15,7 @@ from db.repository.bills import get_bill_by_id
 from db.repository.bills import get_bill_by_type
 from db.repository.bills import update_bill_by_id
 from db.session import get_db
-from schemas.bills import createBill, viewBill, statusBill
+from schemas.bills import createBill, viewBill, statusBill, viewBillwithStatus
 
 router = APIRouter()
 
@@ -36,10 +36,17 @@ def get_bills(db: Session = Depends(get_db)):
     return bills
 
 # get list of bills sorted by due date
-@router.get("/bills/sorted", response_model=List[viewBill])
+@router.get("/bills/sorted", response_model=List[viewBillwithStatus])
 def get_bills_sorted(db: Session = Depends(get_db)):
     bills = get_all_bills(db=db)
     bills.sort(key=lambda x: x.dueDate)
+    for bill in bills:
+        if bill.paidAmount >= bill.billAmount:
+            bill.status = "Paid"
+        elif bill.paidAmount < bill.billAmount and bill.paidAmount > 0:
+            bill.status = "Partially Paid"
+        else:
+            bill.status = "Unpaid"
     return bills
 
 @router.get("/bills/{id}", response_model=viewBill)
