@@ -1,21 +1,25 @@
-import re
-import sys
-import uuid
 import os
+import sys
+import re
+import uuid
 from core.config import log
+from db.repository.grokPatterns import get_all_grok_patterns
+from db.repository.txnPatterns import get_all_patterns
 from imessage_reader import fetch_data
-from db.repository.txn_patterns import get_all_patterns
-from db.session import get_db
+
 
 class iMessages:
     def __init__(self, db) -> None:
         """
         Initialize the iMessages class.
         - Sets up the database path from the environment variable or default path.
-        - Validates the existence of the database path.
-        - Loads messages from the iMessage database.
-        - Filters messages based on predefined transaction patterns.
+        - Loads Grok patterns and transaction patterns from the database.
+        - Filters messages based on transaction patterns.
         """
+        # Load Grok patterns from the database
+        self.grok_patterns = get_all_grok_patterns(db)
+        log.info(f"Grok patterns loaded: {self.grok_patterns}")
+
         # Get the database path from the environment variable or use the default path
         DB_PATH = os.getenv("DATA_DIRECTORY", "/Users/sumitsontakke/Documents/mbt_data/")
         log.info(f"DB_PATH: {DB_PATH}")
@@ -35,10 +39,11 @@ class iMessages:
         # Fetch all messages from the database
         all_messages = fd.get_messages()
 
-        # Define patterns to identify transaction-related messages
+        # Load transaction patterns from the database
         txn_patterns = get_all_patterns(db)
-        log.info(f"Transaction patterns loaded: #{len(txn_patterns)}")
+        log.info(f"Transaction patterns loaded: {len(txn_patterns)}")
         if not txn_patterns:
+            log.warning("No transaction patterns found in the database. Using default patterns.")
             txn_patterns = [
                 r"Sent Rs\.\d+\.\d+ from Kotak Bank AC X\d+",
                 r"Sent Rs\.\d+\.\d+ from Kotak Bank AC X\d+ to \S+ on \d{2}-\d{2}-\d{2}",
@@ -61,25 +66,28 @@ class iMessages:
         """
         Returns all raw iMessages without filtering.
         - Useful for debugging or when no filtering is needed.
+
+        Returns:
+            list: A list of all raw iMessages.
         """
-        # Return all messages without filtering
-        log.info(f"Total messages count: {len(self.msgs)}")
+        log.info(f"Total raw messages count: {len(self.all_messages_raw)}")
         return self.all_messages_raw
 
     def get_messages(self):
         """
         Returns a list of filtered iMessages with extracted fields.
-        - Extracts key information such as sender, text, timestamp, type, receiver, and more.
+        - Extracts key information dynamically based on Grok patterns.
+
+        Returns:
+            list: A list of processed messages with extracted fields.
         """
-        # Extract key information from each filtered message
         processed_msgs = [self.process_message(msg) for msg in self.msgs]
         log.info(f"Processed messages count: {len(processed_msgs)}")
         return processed_msgs
 
     def process_message(self, msg):
         """
-        Processes a single message by extracting key entities.
-        - Combines all entity extraction functions to process the message.
+        Processes a single message by extracting key entities dynamically.
 
         Args:
             msg (tuple): The message tuple containing raw data.
@@ -94,92 +102,46 @@ class iMessages:
         # Generate a unique ID for the message
         data["id"] = str(uuid.uuid4())
 
-        # Extract entities from the message
-        data["amount"] = self.extract_amount(data.get("text", ""))
-        data["to_id"] = self.extract_upi_id(data.get("text", ""))
-        data["accounts_info"] = self.extract_account_info(data.get("text", ""))
+        # Extract entities dynamically using Grok patterns
+        extracted_fields = self.extract_key_fields(data.get("text", ""))
+        data.update(extracted_fields)
 
         return data
 
-    def extract_amount(self, text):
+    def extract_key_fields(self, text):
         """
-        Extracts transaction amounts from the message text.
+        Dynamically extracts key fields from the message text using Grok patterns.
 
         Args:
             text (str): The message text.
 
         Returns:
-            list: A list of extracted amounts.
+            dict: A dictionary containing extracted fields and their values.
         """
-        # Define patterns to identify amounts
-        amount_patterns = [
-            r"Rs\.\d+",
-            r"INR\s*\d+",
-            r"INR.\s*\d+",
-        ]
+        extracted_info = {}
 
-        # Extract amounts using the patterns
-        currency_amt = [
-            match.group() for pattern in amount_patterns for match in re.finditer(pattern, text)
-        ]
+        # Iterate over Grok patterns and apply them to the text
+        for field, pattern in self.grok_patterns.items():
+            matches = re.findall(pattern, text)  # Find all matches for the pattern
+            if matches:
+                # If the field already exists, append matches to the existing list
+                if field in extracted_info:
+                    extracted_info[field].extend(matches)
+                else:
+                    extracted_info[field] = matches
 
-        # Extract numeric values from the matched amounts
-        amount_num = [int(num) for amt in currency_amt for num in re.findall(r"\d+", amt)]
-        return amount_num if amount_num else None
+        return extracted_info
 
-    def extract_upi_id(self, text):
+    def debug_message(self, msg):
         """
-        Extracts UPI IDs from the message text.
+        Debug a single message by printing its raw and processed data.
 
         Args:
-            text (str): The message text.
+            msg (tuple): The message tuple containing raw data.
 
         Returns:
-            list: A list of extracted UPI IDs.
+            None
         """
-        # Define pattern to identify UPI IDs
-        upi_pattern = r"\S+@\S+"
-
-        # Extract UPI IDs using the pattern
-        return re.findall(upi_pattern, text)
-
-    def extract_account_info(self, text):
-        """
-        Extracts account-related information from the message text.
-
-        Args:
-            text (str): The message text.
-
-        Returns:
-            list: A list of tuples containing account information.
-        """
-        accounts_info = []
-
-        # Define patterns to identify bank account numbers
-        bank_account_patterns = [
-            r"\bX\d{2,6}\b",  # Bank account numbers (e.g., X1234)
-        ]
-
-        # Extract bank account numbers
-        for pattern in bank_account_patterns:
-            acc_id = re.findall(pattern, text)
-            if acc_id and "bank ac" in text[: text.index(acc_id[-1])].lower():
-                accounts_info.append(("bank_ac", acc_id))
-
-        # Define patterns to identify credit card numbers
-        credit_card_patterns = [
-            r"\bXX\d{3,4}\b",  # Credit card numbers (e.g., XX1234)
-        ]
-
-        # Extract credit card numbers
-        for pattern in credit_card_patterns:
-            acc_id = re.findall(pattern, text)
-            if (
-                acc_id
-                and "credit" in text[: text.index(acc_id[-1])].lower()
-                and "card" in text[: text.index(acc_id[-1])].lower()
-                and "credit card" in text[: text.index(acc_id[-1])].lower()
-            ):
-                accounts_info.append(("credit_card", acc_id))
-
-        return accounts_info
+        log.info(f"Raw message: {msg}")
+        processed_msg = self.process_message(msg)
+        log.info(f"Processed message: {processed_msg}")
