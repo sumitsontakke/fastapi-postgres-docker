@@ -102,10 +102,6 @@ def create_new_ipmessage(imessage: createIPMessage, db: Session):
     return this_doc
 
 
-def create_new_txnMsg():
-    pass
-
-
 def find_ipmessage(db, **ipmsg):
     """
     Check if the iMessage already exists in the Application database, iPMessage table.
@@ -133,3 +129,19 @@ def find_ipmessage(db, **ipmsg):
         log.error(f"Error in finding iMessage: {e}")
         return None
     
+def get_all_ipMessages(db: Session):
+    """
+    Retrieve all iPMessage records from the database.
+
+    Args:
+        db (Session): The database session.
+
+    Returns:
+        list: A list of all iPMessage records.
+    """
+    try:
+        ipmessages = db.query(iPMessage).all()
+        return ipmessages
+    except Exception as e:
+        log.error(f"Error retrieving all iPMessages: {e}")
+        return []

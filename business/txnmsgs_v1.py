@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from business.definitions.iMessages import iMessages
 from core.config import log
 from db.repository.ipmessage import create_new_ipmessage
-from db.repository.ipmessage import find_ipmessage
+from db.repository.ipmessage import find_ipmessage, get_all_ipMessages
 from db.session import get_db
 
 
@@ -106,7 +106,24 @@ def txnmsg_process(db):
     # post unprocessed imessages
     return {"status": "Success"}
 
+def txnmsg_fetch(db: Session):
+    """
+    Fetches all iMessages from the database.
 
-# if __name__ == "__main__":
-#     db: Session = Depends(get_db)
-#     txnmsg_main(db=db)
+    Args:
+        db (Session): The database session.
+
+    Returns:
+        list: A list of all iMessages.
+    """
+    try:
+        # Fetch all iMessages from the database
+        messages = get_all_ipMessages(db)
+        if not messages:
+            log.info("No iMessages found in the database.")
+            return []
+        log.info(f"Total iMessages count: {len(messages)}")
+        return messages
+    except Exception as e:
+        log.error(f"Error fetching iMessages from the database: {e}")
+        raise
