@@ -36,6 +36,10 @@ class createIPMessage(BaseModel):
 
         # Serialize `accounts_info` if it's a list or dict
         accounts_info = values.get("accounts_info")
+        try:
+            accounts_info = eval(accounts_info)
+        except (SyntaxError, NameError):
+            pass
         if isinstance(accounts_info, (list, dict)):
             import json
             values["accounts_info"] = json.dumps(accounts_info)

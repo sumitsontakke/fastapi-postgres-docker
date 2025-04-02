@@ -21,7 +21,7 @@ class iPMessage(Base):
     receiver = Column(String, nullable=False)
     _number_ = Column(String, nullable=False)
     amount = Column(JSON)
-    accounts_info = Column(String)
+    accounts_info = Column(JSON)
     to_id = Column(JSON, nullable=True, default=None)
     usr_acted = Column(Boolean)
 
