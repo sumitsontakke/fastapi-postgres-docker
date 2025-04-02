@@ -4,7 +4,7 @@ import re
 import uuid
 from core.config import log
 from db.repository.grokPatterns import get_all_grok_patterns
-from db.repository.txnPatterns import get_all_patterns
+from db.repository.txn_patterns import get_all_patterns
 from imessage_reader import fetch_data
 
 

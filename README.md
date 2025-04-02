@@ -1,7 +1,3 @@
-Here’s a comprehensive project documentation that includes all the changes we’ve made so far, along with explanations and usage instructions. This documentation is structured to cater to the developer community and is suitable for a GitHub repository.
-
----
-
 # **iMessages Transaction Parser**
 
 ## **Overview**

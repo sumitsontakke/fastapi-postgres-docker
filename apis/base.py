@@ -9,6 +9,7 @@ from apis.v1 import route_txnmsgs
 from apis.v1 import route_user
 from apis.v1 import route_bills
 from apis.v1 import route_txnpatterns
+from apis.v1 import route_grokPatterns
 from apis.v2 import route_txnmsgs as route_txnmsgs_v2
 
 
@@ -22,4 +23,5 @@ api_router.include_router(route_bills.router, prefix="", tags=["bills"])
 api_router.include_router(route_txnmsgs.router, prefix="/txnmsgs", tags=["txnmsgs"])
 api_router.include_router(route_txnmsgs_v2.router, prefix="/txnmsgs/v2", tags=["txnmsgs"])
 api_router.include_router(route_txnpatterns.router, prefix="/txnpatterns", tags=["txnpatterns"])
+api_router.include_router(route_grokPatterns.router, prefix="/grokpatterns", tags=["grokpatterns"])
 # make sure we import this 'api_router' in the main.py file
