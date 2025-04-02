@@ -1,103 +1,194 @@
-```python3 -m uvicorn main:app --host 0.0.0.0 --port 80 --reload``` command to run this project
-
-```docker run -it --rm -v $(pwd):/app -p 80:8080 fastapi-postgres-dev``` command to run this project with Docker image
-
-Workspace: Collecting workspace information`@workspace` accuracy and speed can be improved by building a remote workspace index. [Learn More](https://aka.ms/vscode-copilot-workspace-remote-index)
-
-Build remote workspace index
-
-This project appears to be a FastAPI-based web application with a PostgreSQL database, likely containerized using Docker. Here's a breakdown of what it does and how to run it:
-
-### What the Project Does
-1. **FastAPI Application**:
-   - The main entry point is `main.py`, which initializes a FastAPI app.
-   - It includes API routes from `apis.base.api_router`.
-   - Middleware for CORS is added to allow cross-origin requests.
-
-2. **Database Integration**:
-   - The database tables are created using SQLAlchemy's `Base.metadata.create_all(bind=engine)` in the `create_tables` function.
-   - The database engine is configured in `db.session`.
-
-3. **Endpoints**:
-   - `/`: Returns a welcome message (`{"msg": "Hello FastAPI🚀"}`).
-   - `/userinfo`: Returns a default user object (`{"user_name": "Sumit Jain", "user_role": "Coding World Explorer"}`).
-
-4. **Configuration**:
-   - Settings like `PROJECT_NAME` and `PROJECT_VERSION` are loaded from `core.config.settings`.
+Here’s a comprehensive project documentation that includes all the changes we’ve made so far, along with explanations and usage instructions. This documentation is structured to cater to the developer community and is suitable for a GitHub repository.
 
 ---
 
-### How to Run the Project
+# **iMessages Transaction Parser**
 
-1. **Install Dependencies**:
-   - Ensure you have Python installed.
-   - Install dependencies from the `requirements.txt` file:
-     ```sh
-     pip install -r requirements.txt
-     ```
+## **Overview**
+The `iMessages Transaction Parser` is a Python-based project designed to extract meaningful financial information from iMessage text messages. It dynamically adapts to new message formats by leveraging Grok patterns stored in a database. This project is ideal for personal use to compute bank balances, credit card spendings, and other financial transactions. It also supports community contributions for enhancements and bug fixes.
 
-2. **Set Up the Database**:
-   - Ensure PostgreSQL is running.
-   - Configure the database connection in `db.session` or the environment variables used in `core.config`.
+---
 
-3. **Run the Application**:
-   - Start the FastAPI server:
-     ```sh
-     uvicorn main:app --reload
-     ```
-   - This will start the server at `http://127.0.0.1:8000`.
+## **Features**
+1. **Dynamic Grok Pattern Loading**:
+   - Grok patterns are stored in a database and dynamically loaded at runtime, allowing the system to adapt to new message formats without code changes.
 
-4. **Access the API**:
-   - Open your browser or use a tool like `curl` or Postman to access:
-     - `http://127.0.0.1:8000/` for the welcome message.
-     - `http://127.0.0.1:8000/userinfo` for user info.
+2. **Field Extraction**:
+   - Extracts key fields such as `amount`, `account`, `upi_id`, `timestamp`, and `merchant` from text messages.
 
-5. **Using Docker (if applicable)**:
-   - If the project is containerized, check for a `Dockerfile` or `docker-compose.yml` in the workspace.
-   - Build and run the container:
-     ```sh
-     docker-compose up --build
-     ```
+3. **Handles Multiple Matches**:
+   - Supports multiple patterns for a single field (e.g., `amount`) and aggregates all matches into a list.
 
-6. **Run Tests**:
-   - If there are tests in the `tests/` directory, you can run them using `pytest`:
-     ```sh
-     pytest
-     ```
+4. **Scalable and Maintainable**:
+   - Centralized pattern management in the database ensures scalability and ease of maintenance.
 
-Let me know if you need help with any specific part!
+5. **Developer-Friendly**:
+   - Designed for the developer community to use, enhance, and contribute.
 
-To create the `BillsM` table in your database, you need to ensure that the SQLAlchemy `Base.metadata.create_all()` method is executed with the correct database engine. Based on your project structure, this is already handled in the `create_tables()` function in your main.py file.
+---
 
-### Steps to Create the Table:
-1. **Ensure the Model is Imported**: Verify that the `BillsM` model is imported in the base.py file. This file should import all models to ensure they are registered with SQLAlchemy's `Base`. For example:
-   ```python
-   # filepath: /Users/sumitsontakke/Documents/Dev/fastapi-postgres-docker/db/base.py
-   from db.models.bills import BillsM
-   # Import other models here
-   ```
+## **Project Structure**
+```
+fastapi-postgres-docker/
+├── apis/
+│   ├── base.py                # API routing
+│   ├── v1/
+│   │   ├── route_txnPatterns.py  # API endpoints for managing Grok patterns
+├── business/
+│   ├── definitions/
+│   │   ├── iMessages.py       # Core logic for parsing iMessages
+├── db/
+│   ├── models/
+│   │   ├── grokPatterns.py    # Database model for Grok patterns
+│   │   ├── txnPatterns.py     # Database model for transaction patterns
+│   ├── repository/
+│   │   ├── grokPatterns.py    # Repository for managing Grok patterns
+│   │   ├── txnPatterns.py     # Repository for managing transaction patterns
+│   ├── session.py             # Database session management
+├── scripts/
+│   ├── load_txn_patterns.sh   # Shell script to load transaction patterns into the database
+├── core/
+│   ├── config.py              # Logging and configuration
+├── README.md                  # Project documentation
+```
 
-2. **Run the Application**: Since the `create_tables()` function is called when the application starts, simply running the application will create the table. Use the following command:
+---
+
+## **Installation**
+
+### **Prerequisites**
+- Python 3.9+
+- PostgreSQL
+- Docker (optional, for containerized deployment)
+
+### **Steps**
+1. **Clone the Repository**:
    ```bash
-   python3 -m uvicorn main:app --reload
+   git clone https://github.com/your-username/imessages-transaction-parser.git
+   cd imessages-transaction-parser
    ```
 
-3. **Verify Table Creation**: Check your database to confirm that the `BillsM` table has been created. You can use a database client or query the database directly.
+2. **Set Up a Virtual Environment**:
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate
+   ```
 
-### Alternative: Manual Table Creation
-If you want to create the table without running the application, you can use a standalone script. For example:
+3. **Install Dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-```python
-from db.base import Base
-from db.session import engine
+4. **Set Up the Database**:
+   - Create a PostgreSQL database.
+   - Update the database connection string in config.py.
 
-# Create all tables
-Base.metadata.create_all(bind=engine)
-```
+5. **Run Migrations**:
+   ```bash
+   alembic upgrade head
+   ```
 
-Run the script with:
+6. **Start the Application**:
+   ```bash
+   uvicorn main:app --reload
+   ```
+
+---
+
+## **Usage**
+
+### **1. Add Grok Patterns**
+Use the `/grokpatterns` API endpoint to add Grok patterns for extracting fields.
+
+#### **Example Request**
 ```bash
-python3 create_tables.py
+curl --location 'http://localhost:8000/grokpatterns' \
+--header 'Content-Type: application/json' \
+--data '{
+    "field": "amount",
+    "pattern": "(?:Rs\\.|INR)\\s?(\\d{1,3}(?:,\\d{3})*(?:\\.\\d{1,2})?)",
+    "description": "Extracts amounts in formats like Rs.1234.56 or INR 1,234.56"
+}'
 ```
 
-Let me know if you need help verifying the table creation or debugging!
+### **2. Load Transaction Patterns**
+Run the `load_txn_patterns.sh` script to load predefined transaction patterns into the database.
+
+```bash
+./scripts/load_txn_patterns.sh
+```
+
+### **3. Parse iMessages**
+Use the `iMessages` class to parse iMessages and extract key fields.
+
+#### **Example Code**
+```python
+from db.session import get_db
+from business.definitions.iMessages import iMessages
+
+# Get the database session
+db = next(get_db())
+
+# Initialize iMessages
+imessages = iMessages(db)
+
+# Get processed messages
+processed_messages = imessages.get_messages()
+print(processed_messages)
+```
+
+---
+
+## **How It Works**
+
+### **1. Dynamic Grok Pattern Loading**
+- Grok patterns are stored in the `GrokPattern` table.
+- At runtime, the `iMessages` class fetches these patterns and applies them to extract fields dynamically.
+
+### **2. Field Extraction**
+- The `extract_key_fields` method uses regex patterns to extract fields like `amount`, `account`, `upi_id`, etc.
+- Multiple matches for a single field are stored in a list.
+
+### **3. Transaction Filtering**
+- Messages are filtered using transaction patterns stored in the `txnPatterns` table.
+
+---
+
+## **Contributing**
+
+### **How to Contribute**
+1. Fork the repository.
+2. Create a new branch for your feature or bug fix.
+3. Commit your changes and push them to your fork.
+4. Submit a pull request.
+
+### **Contribution Guidelines**
+- Follow PEP 8 for Python code.
+- Write clear and concise commit messages.
+- Add tests for new features or bug fixes.
+
+---
+
+## **Future Enhancements**
+1. **Support for Additional Message Formats**:
+   - Add more Grok patterns to handle diverse message formats.
+
+2. **Improved Error Handling**:
+   - Enhance error handling for edge cases.
+
+3. **Web Interface**:
+   - Build a web interface for managing patterns and viewing parsed messages.
+
+4. **Integration with Financial Tools**:
+   - Export parsed data to financial tools like Excel or budgeting apps.
+
+---
+
+## **License**
+This project is licensed under the MIT License. See the LICENSE file for details.
+
+---
+
+## **Acknowledgments**
+- Inspired by the need for better personal finance tracking tools.
+- Thanks to the developer community for their contributions and feedback.
