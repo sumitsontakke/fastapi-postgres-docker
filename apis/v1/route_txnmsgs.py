@@ -19,12 +19,12 @@ from fastapi import Depends
 from fastapi import status
 from sqlalchemy.orm import Session
 
-from business.txnmsg_main import txnmsg_main
+from business.txnmsg_main import txnmsg_main, debug_msg_parse
 from business.txnmsgs_refresh import txnmsgs_refresh_getapi, feed_all_msg_into_regMsgs
 from core.config import log
 from db.repository.ipmessage import create_new_ipmessage
 from db.session import get_db
-from schemas.ipmessage import createIPMessage
+from schemas.ipmessage import createIPMessage, txnMsg
 
 # Initialize the API router for transaction message-related endpoints
 router = APIRouter()
@@ -85,6 +85,10 @@ def get_txnmsgs(db: Session = Depends(get_db)):
     data = txnmsgs_refresh_getapi(db)
     return {"m_transactions": data}
 
+@router.post("/debug-parse", status_code=status.HTTP_200_OK, response_model=dict)
+def debbug_txnmsg_parse(request: txnMsg, db: Session = Depends(get_db)):
+    parsed_msg = debug_msg_parse(request.message, db)
+    return parsed_msg
 
 @router.post("/syncdb", status_code=status.HTTP_200_OK)
 async def sync_imsgdb(db: Session = Depends(get_db)):

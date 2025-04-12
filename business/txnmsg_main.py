@@ -98,6 +98,10 @@ def txnmsg_main(db):
     # post unprocessed imessages
     return {"status": "Success"}
 
+def debug_msg_parse(message, db):
+    this_imsg = iMessages(db=db)
+    processed_msg = this_imsg.debug_message(message)
+    return processed_msg
 
 if __name__ == "__main__":
     db: Session = Depends(get_db)

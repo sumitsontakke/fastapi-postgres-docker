@@ -2,7 +2,9 @@ from datetime import datetime
 from typing import List, Optional, Union
 from pydantic import BaseModel, root_validator
 
-
+class txnMsg(BaseModel):
+    message: str
+    
 class createIPMessage(BaseModel):
     sender: str
     text: str

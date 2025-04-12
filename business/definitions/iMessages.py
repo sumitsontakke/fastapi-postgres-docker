@@ -145,3 +145,4 @@ class iMessages:
         log.info(f"Raw message: {msg}")
         processed_msg = self.process_message(msg)
         log.info(f"Processed message: {processed_msg}")
+        return processed_msg

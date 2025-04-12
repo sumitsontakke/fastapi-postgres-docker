@@ -15,10 +15,10 @@ def get_all_patterns(db: Session):
     """
     try:
         patterns = db.query(txnPatterns).all()
-        log.info(f"Loaded {len(patterns)} patterns from the database.")
+        log.info(f"db.repository: Loaded {len(patterns)} transaction patterns from the database.")
         return [pattern.pattern for pattern in patterns]
     except Exception as e:
-        log.error(f"Error fetching patterns from the database: {e}")
+        log.error(f"db.repository: Error fetching transaction patterns from the database: {e}")
         return []
 
 
@@ -39,10 +39,10 @@ def add_pattern(db: Session, pattern: str, description: str = None):
         db.add(new_pattern)
         db.commit()
         db.refresh(new_pattern)
-        log.info(f"Added new pattern: {pattern}")
+        log.info(f"db.repository: Added new pattern: {pattern}")
         return new_pattern
     except Exception as e:
-        log.error(f"Error adding pattern to the database: {e}")
+        log.error(f"db.repository: Error adding pattern to the database: {e}")
         return None
 
 
@@ -66,11 +66,11 @@ def update_pattern(db: Session, pattern_id: int, new_pattern: str, description: 
             pattern.description = description
             db.commit()
             db.refresh(pattern)
-            log.info(f"Updated pattern ID {pattern_id} to: {new_pattern}")
+            log.info(f"db.repository: Updated pattern ID {pattern_id} to: {new_pattern}")
             return pattern
         else:
-            log.warning(f"Pattern ID {pattern_id} not found.")
+            log.warning(f"db.repository: Pattern ID {pattern_id} not found.")
             return None
     except Exception as e:
-        log.error(f"Error updating pattern in the database: {e}")
+        log.error(f"db.repository: Error updating pattern in the database: {e}")
         return None
