@@ -1,7 +1,9 @@
 version: "3.8"
 
 services:
-  app:
+  ui_app:
+    image: expense_tracker_dashboard
+  api_app:
     image: fastapi-postgres-prod
     build:
       context: .

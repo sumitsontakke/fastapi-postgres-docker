@@ -21,7 +21,7 @@ class iMessages:
         log.info(f"Grok patterns loaded: {self.grok_patterns}")
 
         # Get the database path from the environment variable or use the default path
-        DB_PATH = os.getenv("DATA_DIRECTORY", "/Users/sumitsontakke/Documents/mbt_data/")
+        DB_PATH = os.getenv("DATA_DIRECTORY", "/Users/sumitsontakke/Documents/budget_and_expenses/data/")
         log.info(f"DB_PATH: {DB_PATH}")
 
         # Check if the database path exists
