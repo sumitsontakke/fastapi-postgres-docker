@@ -27,8 +27,8 @@ class Settings:
     PROJECT_NAME: str = "MBdgt"
     PROJECT_VERSION: str = "1.0.0"
     POSTGRES_PORT = 5432
-    POSTGRES_USER: str = "appuser"
-    POSTGRES_DB: str = os.environ.get("DATABASE_PWD", "app")
+    POSTGRES_USER: str = os.environ.get("POSTGRES_USER", "appuser")
+    POSTGRES_DB: str = os.environ.get("POSTGRES_DB", "app")
     POSTGRES_PASSWORD: str = os.environ.get("DATABASE_PWD", "supersecretpassword")
     POSTGRES_HOST: str = os.environ.get("POSTGRES_HOST", "localhost")
     DATABASE_URL: str = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
